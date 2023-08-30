@@ -8,6 +8,8 @@ import 'package:provider/provider.dart';
 
 typedef AppLifecycleStateNotifier = ValueNotifier<AppLifecycleState>;
 
+// TODO(filiph): use the new AppLifecycleListener class, e.g.
+//               https://kazlauskas.dev/flutter-app-lifecycle-listener-overview/
 class AppLifecycleObserver extends StatefulWidget {
   final Widget child;
 

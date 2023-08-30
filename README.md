@@ -117,6 +117,9 @@ that set up.
 
 # Integrations
 
+TODO(filiph): keep the general advice, like changing package name early,
+              but move everything else to adjacent documentation (such as cookbook)
+
 The more advanced integrations are disabled by default. For example,
 achievements aren't enabled at first because you, the developer,
 have to set them up (the achievements need to exist in App Store Connect
