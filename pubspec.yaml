@@ -38,11 +38,11 @@ flutter:
   fonts:
     - family: Permanent Marker
       fonts:
-        - asset: assets/Permanent_Marker/PermanentMarker-Regular.ttf
+        - asset: assets/fonts/Permanent_Marker/PermanentMarker-Regular.ttf
 
 flutter_icons:
   android: true
   ios: true
-  image_path: "assets/icon.png"
+  image_path: "assets/icons/icon.png"
   adaptive_icon_background: "#FFFFFF"
-  adaptive_icon_foreground: "assets/icon-adaptive-foreground.png"
+  adaptive_icon_foreground: "assets/icons/icon-adaptive-foreground.png"
