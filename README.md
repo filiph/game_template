@@ -1,19 +1,32 @@
-A starter game in Flutter with all the bells and whistles
-of a mobile (iOS & Android) game including the following features:
+A starter Flutter project with a minimal shell of a  game
+including the following features:
 
-- sound
-- music
 - main menu screen
+- basic navigation
+- game-y theming
 - settings
-- ads (AdMob)
-- in-app purchases
-- games services (Game Center & Google Play Games Services)
-- crash reporting (Firebase Crashlytics)
+- sound
+
+You can jump directly into building your game in `lib/src/play_session/`.
+
+When you're ready for things like ads, in-app purchases, achievements,
+analytics, crash reporting, and so on, 
+there are resources ready for you
+at [flutter.dev/games](https://flutter.dev/games).
 
 
 # Getting started
 
-The game compiles and works out of the box. It comes with things
+Clone this project and run the following command in its root directory:
+
+```terminal
+flutter create . --project-name game_template
+```
+
+This will create the necessary platform files, such as `ios/`, `android/`,
+`web/`, `macos/`, `linux/` or `windows/`, depending on your installation of Flutter.
+
+After this, the game compiles and works out of the box. It comes with things
 like a main menu, a router, a settings screen, and audio.
 When building a new game, this is likely everything you first need.
 
