@@ -40,6 +40,13 @@ class _PlaySessionScreenState extends State<PlaySessionScreen> {
   late DateTime _startOfPlay;
 
   @override
+  void initState() {
+    super.initState();
+
+    _startOfPlay = DateTime.now();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final palette = context.watch<Palette>();
 
@@ -112,13 +119,6 @@ class _PlaySessionScreenState extends State<PlaySessionScreen> {
         ),
       ),
     );
-  }
-
-  @override
-  void initState() {
-    super.initState();
-
-    _startOfPlay = DateTime.now();
   }
 
   Future<void> _playerWon() async {
