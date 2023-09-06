@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:provider/provider.dart';
 
 import 'router.dart';
@@ -12,7 +13,10 @@ import 'src/player_progress/player_progress.dart';
 import 'src/settings/settings.dart';
 import 'src/style/palette.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await MobileAds.instance.initialize();
+
   runApp(MyApp());
 }
 
