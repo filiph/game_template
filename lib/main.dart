@@ -15,7 +15,7 @@ import 'src/style/palette.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await MobileAds.instance.initialize();
+  MobileAds.instance.initialize();
 
   runApp(MyApp());
 }
