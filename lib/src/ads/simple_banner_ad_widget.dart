@@ -50,7 +50,7 @@ class SimpleBannerAdWidget extends StatefulWidget {
 }
 
 class _SimpleBannerAdWidgetState extends State<SimpleBannerAdWidget> {
-  // The banner ad to show. This is null until the ad is actually loaded.
+  /// The banner ad to show. This is null until the ad is actually loaded.
   BannerAd? _bannerAd;
 
   @override
