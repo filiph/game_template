@@ -19,6 +19,7 @@ dependencies:
   logging: ^1.1.0
   provider: ^6.0.2
   shared_preferences: ^2.2.0
+  games_services: ^3.0.3
 
 dev_dependencies:
   flutter_lints: ^2.0.2
