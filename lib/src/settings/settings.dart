@@ -18,13 +18,13 @@ class SettingsController {
 
   /// Whether or not the sound is on at all. This overrides both music
   /// and sound.
-  ValueNotifier<bool> muted = ValueNotifier(false);
+  ValueNotifier<bool> muted = ValueNotifier(true);
 
   ValueNotifier<String> playerName = ValueNotifier('Player');
 
-  ValueNotifier<bool> soundsOn = ValueNotifier(false);
+  ValueNotifier<bool> soundsOn = ValueNotifier(true);
 
-  ValueNotifier<bool> musicOn = ValueNotifier(false);
+  ValueNotifier<bool> musicOn = ValueNotifier(true);
 
   /// Creates a new instance of [SettingsController] backed by [persistence].
   SettingsController() {
@@ -35,13 +35,19 @@ class SettingsController {
   Future<void> loadStateFromPersistence() async {
     await Future.wait([
       _persistence
+          .getMuted(defaultValue: false)
           // On the web, sound can only start after user interaction, so
-          // we start muted there.
-          // On any other platform, we start unmuted.
-          .getMuted(defaultValue: kIsWeb)
-          .then((value) => muted.value = value),
-      _persistence.getSoundsOn().then((value) => soundsOn.value = value),
-      _persistence.getMusicOn().then((value) => musicOn.value = value),
+          // we start muted there on every game start.
+          // On other platforms, we can use the persisted value.
+          .then((value) {
+        return muted.value = kIsWeb || value;
+      }),
+      _persistence
+          .getSoundsOn(defaultValue: true)
+          .then((value) => soundsOn.value = value),
+      _persistence
+          .getMusicOn(defaultValue: true)
+          .then((value) => musicOn.value = value),
       _persistence.getPlayerName().then((value) => playerName.value = value),
     ]);
   }
