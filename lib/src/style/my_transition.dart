@@ -4,7 +4,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:logging/logging.dart';
 
 CustomTransitionPage<T> buildMyTransition<T>({
   required Widget child,
@@ -31,51 +30,25 @@ CustomTransitionPage<T> buildMyTransition<T>({
   );
 }
 
-class _MyReveal extends StatefulWidget {
+class _MyReveal extends StatelessWidget {
   final Widget child;
 
   final Animation<double> animation;
 
   final Color color;
 
-  const _MyReveal({
+  final _slideTween = Tween(begin: const Offset(0, -1), end: Offset.zero);
+
+  final _fadeTween = TweenSequence([
+    TweenSequenceItem(tween: ConstantTween(0.0), weight: 1),
+    TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0), weight: 1),
+  ]);
+
+  _MyReveal({
     required this.child,
     required this.animation,
     required this.color,
   });
-
-  @override
-  State<_MyReveal> createState() => _MyRevealState();
-}
-
-class _MyRevealState extends State<_MyReveal> {
-  static final _log = Logger('_InkRevealState');
-
-  bool _finished = false;
-
-  final _tween = Tween(begin: const Offset(0, -1), end: Offset.zero);
-
-  @override
-  void initState() {
-    super.initState();
-
-    widget.animation.addStatusListener(_statusListener);
-  }
-
-  @override
-  void didUpdateWidget(covariant _MyReveal oldWidget) {
-    if (oldWidget.animation != widget.animation) {
-      oldWidget.animation.removeStatusListener(_statusListener);
-      widget.animation.addStatusListener(_statusListener);
-    }
-    super.didUpdateWidget(oldWidget);
-  }
-
-  @override
-  void dispose() {
-    widget.animation.removeStatusListener(_statusListener);
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -83,39 +56,22 @@ class _MyRevealState extends State<_MyReveal> {
       fit: StackFit.expand,
       children: [
         SlideTransition(
-          position: _tween.animate(
+          position: _slideTween.animate(
             CurvedAnimation(
-              parent: widget.animation,
+              parent: animation,
               curve: Curves.easeOutCubic,
               reverseCurve: Curves.easeOutCubic,
             ),
           ),
           child: Container(
-            color: widget.color,
+            color: color,
           ),
         ),
-        AnimatedOpacity(
-          opacity: _finished ? 1 : 0,
-          duration: const Duration(milliseconds: 300),
-          child: widget.child,
+        FadeTransition(
+          opacity: _fadeTween.animate(animation),
+          child: child,
         ),
       ],
     );
-  }
-
-  void _statusListener(AnimationStatus status) {
-    _log.fine(() => 'status: $status');
-    switch (status) {
-      case AnimationStatus.completed:
-        setState(() {
-          _finished = true;
-        });
-      case AnimationStatus.forward:
-      case AnimationStatus.dismissed:
-      case AnimationStatus.reverse:
-        setState(() {
-          _finished = false;
-        });
-    }
   }
 }
