@@ -61,10 +61,7 @@ class _MyBannerAdWidgetState extends State<MyBannerAdWidget> {
     final bannerAd = BannerAd(
       size: widget.adSize,
       adUnitId: widget.adUnitId,
-      request: const AdRequest(
-        // TODO: provide relevant keywords or remove line altogether
-        keywords: ['apples', 'oranges'],
-      ),
+      request: const AdRequest(),
       listener: BannerAdListener(
         // Called when an ad is successfully received.
         onAdLoaded: (ad) {

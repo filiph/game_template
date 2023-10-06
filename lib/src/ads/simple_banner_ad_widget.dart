@@ -86,13 +86,7 @@ class _SimpleBannerAdWidgetState extends State<SimpleBannerAdWidget> {
     final bannerAd = BannerAd(
       size: widget.adSize,
       adUnitId: widget.adUnitId,
-      request: const AdRequest(
-        // You can give more context to AdMob so that it serves
-        // more relevant ads.
-        //
-        // TODO: replace keywords below or remove the line completely
-        keywords: ['programming', 'technology', 'code'],
-      ),
+      request: const AdRequest(),
       listener: BannerAdListener(
         // Called when an ad is successfully received.
         onAdLoaded: (ad) {
