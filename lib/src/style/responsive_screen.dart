@@ -65,7 +65,9 @@ class ResponsiveScreen extends StatelessWidget {
                 maintainBottomViewPadding: true,
                 child: Padding(
                   padding: padding,
-                  child: rectangularMenuArea,
+                  child: Center(
+                    child: rectangularMenuArea,
+                  ),
                 ),
               ),
             ],
