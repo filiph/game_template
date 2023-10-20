@@ -4,7 +4,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:game_template/main.dart';
-import 'package:game_template/src/play_session/playing_card_widget.dart';
+import 'package:game_template/play_session/playing_card_widget.dart';
 
 void main() {
   testWidgets('smoke test', (tester) async {

@@ -9,12 +9,12 @@ import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 
+import 'app_lifecycle/app_lifecycle.dart';
+import 'audio/audio_controller.dart';
+import 'player_progress/player_progress.dart';
 import 'router.dart';
-import 'src/app_lifecycle/app_lifecycle.dart';
-import 'src/audio/audio_controller.dart';
-import 'src/player_progress/player_progress.dart';
-import 'src/settings/settings.dart';
-import 'src/style/palette.dart';
+import 'settings/settings.dart';
+import 'style/palette.dart';
 
 void main() async {
   // Basic logging setup.
