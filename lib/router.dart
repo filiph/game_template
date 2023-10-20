@@ -6,15 +6,15 @@ import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import 'src/game_internals/score.dart';
-import 'src/level_selection/level_selection_screen.dart';
-import 'src/level_selection/levels.dart';
-import 'src/main_menu/main_menu_screen.dart';
-import 'src/play_session/play_session_screen.dart';
-import 'src/settings/settings_screen.dart';
-import 'src/style/my_transition.dart';
-import 'src/style/palette.dart';
-import 'src/win_game/win_game_screen.dart';
+import 'game_internals/score.dart';
+import 'level_selection/level_selection_screen.dart';
+import 'level_selection/levels.dart';
+import 'main_menu/main_menu_screen.dart';
+import 'play_session/play_session_screen.dart';
+import 'settings/settings_screen.dart';
+import 'style/my_transition.dart';
+import 'style/palette.dart';
+import 'win_game/win_game_screen.dart';
 
 /// The router describes the game's navigational hierarchy, from the main
 /// screen through settings screens all the way to each individual level.

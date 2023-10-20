@@ -8,9 +8,9 @@ import 'dart:math';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/widgets.dart';
-import 'package:game_template/src/app_lifecycle/app_lifecycle.dart';
 import 'package:logging/logging.dart';
 
+import '../app_lifecycle/app_lifecycle.dart';
 import '../settings/settings.dart';
 import 'songs.dart';
 import 'sounds.dart';
