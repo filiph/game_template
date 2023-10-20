@@ -5,8 +5,8 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:game_template/src/player_progress/persistence/local_storage_player_progress_persistence.dart';
 
-import 'persistence/local_storage_player_progress_persistence.dart';
 import 'persistence/player_progress_persistence.dart';
 
 /// Encapsulates the player's progress.

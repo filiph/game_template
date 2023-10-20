@@ -4,6 +4,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:game_template/main.dart';
+import 'package:game_template/src/play_session/playing_card_widget.dart';
 
 void main() {
   testWidgets('smoke test', (tester) async {
@@ -28,13 +29,13 @@ void main() {
     // Tap 'Play'.
     await tester.tap(find.text('Play'));
     await tester.pumpAndSettle();
-    expect(find.text('Select level'), findsOneWidget);
+    expect(find.byType(PlayingCardWidget), findsWidgets);
 
-    // Tap level 1.
-    await tester.tap(find.text('Level #1'));
+    // Tap 'Back'.
+    await tester.tap(find.text('Back'));
     await tester.pumpAndSettle();
 
-    // Find the first level's "tutorial" text.
-    expect(find.text('Drag the slider to 5% or above!'), findsOneWidget);
+    // Verify we're back on the homepage.
+    expect(find.text('Play'), findsOneWidget);
   });
 }

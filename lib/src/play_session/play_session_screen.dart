@@ -11,18 +11,15 @@ import 'package:provider/provider.dart';
 
 import '../audio/audio_controller.dart';
 import '../audio/sounds.dart';
-import '../game_internals/level_state.dart';
+import '../game_internals/board_state.dart';
 import '../game_internals/score.dart';
-import '../level_selection/levels.dart';
-import '../player_progress/player_progress.dart';
 import '../style/confetti.dart';
 import '../style/my_button.dart';
 import '../style/palette.dart';
+import 'board_widget.dart';
 
 class PlaySessionScreen extends StatefulWidget {
-  final GameLevel level;
-
-  const PlaySessionScreen(this.level, {super.key});
+  const PlaySessionScreen({super.key});
 
   @override
   State<PlaySessionScreen> createState() => _PlaySessionScreenState();
@@ -39,12 +36,7 @@ class _PlaySessionScreenState extends State<PlaySessionScreen> {
 
   late DateTime _startOfPlay;
 
-  @override
-  void initState() {
-    super.initState();
-
-    _startOfPlay = DateTime.now();
-  }
+  late final BoardState _boardState;
 
   @override
   Widget build(BuildContext context) {
@@ -52,12 +44,7 @@ class _PlaySessionScreenState extends State<PlaySessionScreen> {
 
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(
-          create: (context) => LevelState(
-            goal: widget.level.difficulty,
-            onWin: _playerWon,
-          ),
-        ),
+        Provider.value(value: _boardState),
       ],
       child: IgnorePointer(
         ignoring: _duringCelebration,
@@ -66,7 +53,6 @@ class _PlaySessionScreenState extends State<PlaySessionScreen> {
           body: Stack(
             children: [
               Center(
-                // This is the entirety of the "game".
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -81,23 +67,13 @@ class _PlaySessionScreenState extends State<PlaySessionScreen> {
                       ),
                     ),
                     const Spacer(),
-                    Text('Drag the slider to ${widget.level.difficulty}%'
-                        ' or above!'),
-                    Consumer<LevelState>(
-                      builder: (context, levelState, child) => Slider(
-                        label: 'Level Progress',
-                        autofocus: true,
-                        value: levelState.progress / 100,
-                        onChanged: (value) =>
-                            levelState.setProgress((value * 100).round()),
-                        onChangeEnd: (value) => levelState.evaluate(),
-                      ),
-                    ),
+                    BoardWidget(),
+                    Text("Drag cards to the two areas above."),
                     const Spacer(),
                     Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: MyButton(
-                        onPressed: () => GoRouter.of(context).go('/play'),
+                        onPressed: () => GoRouter.of(context).go('/'),
                         child: const Text('Back'),
                       ),
                     ),
@@ -121,17 +97,27 @@ class _PlaySessionScreenState extends State<PlaySessionScreen> {
     );
   }
 
+  @override
+  void dispose() {
+    _boardState.dispose();
+    super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _startOfPlay = DateTime.now();
+    _boardState = BoardState(onWin: _playerWon);
+  }
+
   Future<void> _playerWon() async {
-    _log.info('Level ${widget.level.number} won');
+    _log.info('Player won');
 
-    final score = Score(
-      widget.level.number,
-      widget.level.difficulty,
-      DateTime.now().difference(_startOfPlay),
-    );
+    // TODO: replace with some meaningful score for the card game
+    final score = Score(1, 1, DateTime.now().difference(_startOfPlay));
 
-    final playerProgress = context.read<PlayerProgress>();
-    playerProgress.setLevelReached(widget.level.number);
+    // final playerProgress = context.read<PlayerProgress>();
+    // playerProgress.setLevelReached(widget.level.number);
 
     // Let the player see the game just after winning for a bit.
     await Future<void>.delayed(_preCelebrationDuration);
