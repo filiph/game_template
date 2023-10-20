@@ -35,6 +35,9 @@ class AudioController {
 
   ValueNotifier<AppLifecycleState>? _lifecycleNotifier;
 
+  final StreamController<_MusicPlayerCommand> _musicCommands =
+      StreamController();
+
   /// Creates an instance that plays music and sound.
   ///
   /// Use [polyphony] to configure the number of sound effects (SFX) that can
@@ -51,6 +54,7 @@ class AudioController {
                 polyphony, (i) => AudioPlayer(playerId: 'sfxPlayer#$i'))
             .toList(growable: false),
         _playlist = Queue.of(List<Song>.of(songs)..shuffle()) {
+    _handleMusicCommands(_musicCommands.stream);
     _musicPlayer.onPlayerComplete.listen(_changeSong);
     unawaited(_preloadSfx());
   }
@@ -65,6 +69,7 @@ class AudioController {
   }
 
   void dispose() {
+    _musicCommands.close();
     _lifecycleNotifier?.removeListener(_handleAppLifecycle);
     _stopAllSound();
     _musicPlayer.dispose();
@@ -166,6 +171,44 @@ class AudioController {
     }
   }
 
+  /// Takes the stream of commands (such as "play this song", "pause the music")
+  /// and executes them one by one, always waiting for each command to fully
+  /// complete.
+  ///
+  /// This is important because the music player is asynchronous and
+  /// it can take significant time between, for example, asking it to play
+  /// a song, and it reporting that it's state is now "playing". Which leads
+  /// to all kinds of race conditions, where the player reports being stopped
+  /// while in reality it is preparing to play a new song.
+  void _handleMusicCommands(Stream<_MusicPlayerCommand> commands) async {
+    await for (final command in commands) {
+      switch (command) {
+        case _PlayCommand(source: var source):
+          await _musicPlayer.setSource(source);
+          try {
+            await _musicPlayer.resume();
+          } catch (e) {
+            // Sometimes, resuming fails with an "Unexpected" error.
+            _log.severe(e);
+          }
+        case _ResumeCommand():
+          try {
+            await _musicPlayer.resume();
+          } catch (e) {
+            // Sometimes, resuming fails with an "Unexpected" error.
+            _log.severe(e);
+          }
+        case _PauseCommand():
+          try {
+            await _musicPlayer.pause();
+          } catch (e) {
+            // Not much we can do here.
+            _log.severe(e);
+          }
+      }
+    }
+  }
+
   void _musicOnHandler() {
     if (_settings!.musicOn.value) {
       // Music got turned on.
@@ -190,9 +233,11 @@ class AudioController {
     }
   }
 
-  Future<void> _playFirstSongInPlaylist() async {
+  void _playFirstSongInPlaylist() async {
     _log.info(() => 'Playing ${_playlist.first} now.');
-    await _musicPlayer.play(AssetSource('music/${_playlist.first.filename}'));
+    _musicCommands.add(
+      _PlayCommand(source: AssetSource('music/${_playlist.first.filename}')),
+    );
   }
 
   /// Preloads all sound effects.
@@ -211,29 +256,21 @@ class AudioController {
     _log.info('Resuming music');
     switch (_musicPlayer.state) {
       case PlayerState.paused:
-        _log.info('Calling _musicPlayer.resume()');
-        try {
-          await _musicPlayer.resume();
-        } catch (e) {
-          // Sometimes, resuming fails with an "Unexpected" error.
-          _log.severe(e);
-          await _playFirstSongInPlaylist();
-        }
+        _musicCommands.add(_ResumeCommand());
       case PlayerState.stopped:
         _log.info("resumeMusic() called when music is stopped. "
             "This probably means we haven't yet started the music. "
             "For example, the game was started with sound off.");
-        await _playFirstSongInPlaylist();
+        _playFirstSongInPlaylist();
       case PlayerState.playing:
         _log.warning('resumeMusic() called when music is playing. '
             'Nothing to do.');
       case PlayerState.completed:
-        _log.warning('resumeMusic() called when music is completed. '
-            "Music should never be 'completed' as it's either not playing "
-            "or looping forever.");
-        await _playFirstSongInPlaylist();
-      default:
-        _log.warning('Unhandled PlayerState: ${_musicPlayer.state}');
+        _log.info('resumeMusic() called when music is completed. '
+            'Starting anew.');
+        _playFirstSongInPlaylist();
+      case PlayerState.disposed:
+        _log.warning('Resume called when player is disposed. Ignoring.');
     }
   }
 
@@ -250,19 +287,33 @@ class AudioController {
     _playFirstSongInPlaylist();
   }
 
-  void _stopAllSound() {
-    if (_musicPlayer.state == PlayerState.playing) {
-      _musicPlayer.pause();
-    }
+  void _stopAllSound() async {
     for (final player in _sfxPlayers) {
       player.stop();
     }
+    _musicCommands.add(_PauseCommand());
   }
 
-  void _stopMusic() {
+  Future<void> _stopMusic() async {
     _log.info('Stopping music');
-    if (_musicPlayer.state == PlayerState.playing) {
-      _musicPlayer.pause();
-    }
+    _musicCommands.add(_PauseCommand());
   }
+}
+
+sealed class _MusicPlayerCommand {
+  const _MusicPlayerCommand();
+}
+
+class _PauseCommand extends _MusicPlayerCommand {
+  const _PauseCommand();
+}
+
+class _PlayCommand extends _MusicPlayerCommand {
+  final Source source;
+
+  const _PlayCommand({required this.source});
+}
+
+class _ResumeCommand extends _MusicPlayerCommand {
+  const _ResumeCommand();
 }
