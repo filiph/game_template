@@ -160,6 +160,15 @@ void foo() {
 }
 ```
 
+This will show up in the console as:
+
+```text
+[Foo] Hello, world!
+```
+
+When using Flutter DevTools, all the metadata of the log message is preserved, 
+so you can filter by logger name, log level, and so on.
+
 Later, when you're closer to production, you can gather these log messages
 (see `lib/main.dart`) and send them to a service like Firebase Crashlytics
 when appropriate.
