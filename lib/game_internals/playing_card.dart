@@ -6,6 +6,8 @@ import 'card_suit.dart';
 
 @immutable
 class PlayingCard {
+  static final _random = Random();
+
   final CardSuit suit;
 
   final int value;
@@ -20,8 +22,8 @@ class PlayingCard {
     );
   }
 
-  factory PlayingCard.random() {
-    final random = Random();
+  factory PlayingCard.random([Random? random]) {
+    random ??= _random;
     return PlayingCard(
       CardSuit.values[random.nextInt(CardSuit.values.length)],
       2 + random.nextInt(9),
