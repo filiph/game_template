@@ -5,6 +5,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+
 import 'settings.dart';
 
 void showCustomNameDialog(BuildContext context) {
@@ -62,14 +63,14 @@ class _CustomNameDialogState extends State<CustomNameDialog> {
   }
 
   @override
-  void didChangeDependencies() {
-    _controller.text = context.read<SettingsController>().playerName.value;
-    super.didChangeDependencies();
-  }
-
-  @override
   void dispose() {
     _controller.dispose();
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.text = context.read<SettingsController>().playerName.value;
   }
 }
