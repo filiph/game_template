@@ -7,6 +7,7 @@ import 'dart:collection';
 import 'dart:math';
 
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:logging/logging.dart';
 
@@ -76,25 +77,25 @@ class AudioController {
   /// Plays a single sound effect, defined by [type].
   ///
   /// The controller will ignore this call when the attached settings'
-  /// [SettingsController.muted] is `true` or if its
+  /// [SettingsController.audioOn] is `true` or if its
   /// [SettingsController.soundsOn] is `false`.
   void playSfx(SfxType type) {
-    final muted = _settings?.muted.value ?? true;
-    if (muted) {
-      _log.info(() => 'Ignoring playing sound ($type) because audio is muted.');
+    final audioOn = _settings?.audioOn.value ?? false;
+    if (!audioOn) {
+      _log.fine(() => 'Ignoring playing sound ($type) because audio is muted.');
       return;
     }
     final soundsOn = _settings?.soundsOn.value ?? false;
     if (!soundsOn) {
-      _log.info(() =>
+      _log.fine(() =>
           'Ignoring playing sound ($type) because sounds are turned off.');
       return;
     }
 
-    _log.info(() => 'Playing sound: $type');
+    _log.fine(() => 'Playing sound: $type');
     final options = soundTypeToFilename(type);
     final filename = options[_random.nextInt(options.length)];
-    _log.info(() => '- Chosen filename: $filename');
+    _log.fine(() => '- Chosen filename: $filename');
 
     final currentPlayer = _sfxPlayers[_currentSfxPlayer];
     currentPlayer.play(AssetSource('sfx/$filename'),
@@ -113,7 +114,7 @@ class AudioController {
   }
 
   /// Enables the [AudioController] to track changes to settings.
-  /// Namely, when any of [SettingsController.muted],
+  /// Namely, when any of [SettingsController.audioOn],
   /// [SettingsController.musicOn] or [SettingsController.soundsOn] changes,
   /// the audio controller will act accordingly.
   void _attachSettings(SettingsController settingsController) {
@@ -125,7 +126,7 @@ class AudioController {
     // Remove handlers from the old settings controller if present
     final oldSettings = _settings;
     if (oldSettings != null) {
-      oldSettings.muted.removeListener(_mutedHandler);
+      oldSettings.audioOn.removeListener(_audioOnHandler);
       oldSettings.musicOn.removeListener(_musicOnHandler);
       oldSettings.soundsOn.removeListener(_soundsOnHandler);
     }
@@ -133,12 +134,29 @@ class AudioController {
     _settings = settingsController;
 
     // Add handlers to the new settings controller
-    settingsController.muted.addListener(_mutedHandler);
+    settingsController.audioOn.addListener(_audioOnHandler);
     settingsController.musicOn.addListener(_musicOnHandler);
     settingsController.soundsOn.addListener(_soundsOnHandler);
 
-    if (!settingsController.muted.value && settingsController.musicOn.value) {
-      _playCurrentSongInPlaylist();
+    if (settingsController.audioOn.value && settingsController.musicOn.value) {
+      if (kIsWeb) {
+        _log.info('On the web, music can only start after user interaction.');
+      } else {
+        _playCurrentSongInPlaylist();
+      }
+    }
+  }
+
+  void _audioOnHandler() {
+    _log.fine('audioOn changed to ${_settings!.audioOn.value}');
+    if (_settings!.audioOn.value) {
+      // All sound just got un-muted. Audio is on.
+      if (_settings!.musicOn.value) {
+        _startOrResumeMusic();
+      }
+    } else {
+      // All sound just got muted. Audio is off.
+      _stopAllSound();
     }
   }
 
@@ -149,7 +167,7 @@ class AudioController {
       case AppLifecycleState.hidden:
         _stopAllSound();
       case AppLifecycleState.resumed:
-        if (!_settings!.muted.value && _settings!.musicOn.value) {
+        if (_settings!.audioOn.value && _settings!.musicOn.value) {
           _startOrResumeMusic();
         }
       case AppLifecycleState.inactive:
@@ -169,7 +187,7 @@ class AudioController {
   void _musicOnHandler() {
     if (_settings!.musicOn.value) {
       // Music got turned on.
-      if (!_settings!.muted.value) {
+      if (_settings!.audioOn.value) {
         _startOrResumeMusic();
       }
     } else {
@@ -178,25 +196,28 @@ class AudioController {
     }
   }
 
-  void _mutedHandler() {
-    _log.fine('Muted changed to ${_settings!.muted.value}');
-    if (_settings!.muted.value) {
-      // All sound just got muted.
-      _stopAllSound();
-    } else {
-      // All sound just got un-muted.
-      if (_settings!.musicOn.value) {
-        _startOrResumeMusic();
-      }
-    }
-  }
-
   Future<void> _playCurrentSongInPlaylist() async {
     _log.info(() => 'Playing ${_playlist.first} now.');
     try {
-      _musicPlayer.play(AssetSource('music/${_playlist.first.filename}'));
+      await _musicPlayer.play(AssetSource('music/${_playlist.first.filename}'));
     } catch (e) {
       _log.severe('Could not play song ${_playlist.first}', e);
+    }
+
+    // Settings can change while the music player is preparing
+    // to play a song (i.e. during the `await` above).
+    // Unfortunately, `audioplayers` has a bug which will ignore calls
+    // to `pause()` before that await is finished, so we need
+    // to double check here.
+    // See issue: https://github.com/bluefireteam/audioplayers/issues/1687
+    if (!_settings!.audioOn.value || !_settings!.musicOn.value) {
+      try {
+        _log.fine('Settings changed while preparing to play song. '
+            'Pausing music.');
+        await _musicPlayer.pause();
+      } catch (e) {
+        _log.severe('Could not pause music player', e);
+      }
     }
   }
 

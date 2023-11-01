@@ -59,11 +59,11 @@ class MainMenuScreen extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(top: 32),
               child: ValueListenableBuilder<bool>(
-                valueListenable: settingsController.muted,
-                builder: (context, muted, child) {
+                valueListenable: settingsController.audioOn,
+                builder: (context, audioOn, child) {
                   return IconButton(
-                    onPressed: () => settingsController.toggleMuted(),
-                    icon: Icon(muted ? Icons.volume_off : Icons.volume_up),
+                    onPressed: () => settingsController.toggleAudioOn(),
+                    icon: Icon(audioOn ? Icons.volume_up : Icons.volume_off),
                   );
                 },
               ),

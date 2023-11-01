@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:flutter/foundation.dart';
+import 'package:logging/logging.dart';
 
 import 'persistence/local_storage_settings_persistence.dart';
 import 'persistence/settings_persistence.dart';
@@ -10,37 +11,71 @@ import 'persistence/settings_persistence.dart';
 /// An class that holds settings like [playerName] or [musicOn],
 /// and saves them to an injected persistence store.
 class SettingsController {
-  /// TODO: If needed, replace this with some other mechanism for saving
-  ///       settings. Currently, this uses the local storage
-  ///       (i.e. NSUserDefaults on iOS, SharedPreferences on Android
-  ///       or local storage on the web).
-  final SettingsPersistence _persistence = LocalStorageSettingsPersistence();
+  static final _log = Logger('SettingsController');
 
-  /// Whether or not the sound is on at all. This overrides both music
-  /// and sound.
-  ValueNotifier<bool> muted = ValueNotifier(true);
+  /// The persistence store that is used to save settings.
+  final SettingsPersistence _persistence;
 
+  /// Whether or not the audio is on at all. This overrides both music
+  /// and sounds (sfx).
+  ///
+  /// This is an important feature especially on mobile, where players
+  /// expect to be able to quickly mute all the audio. Having this as
+  /// a separate flag (as opposed to some kind of {off, sound, everything}
+  /// enum) means that the player will not lose their [soundsOn] and
+  /// [musicOn] preferences when they temporarily mute the game.
+  ValueNotifier<bool> audioOn = ValueNotifier(true);
+
+  /// The player's name. Used for things like high score lists.
   ValueNotifier<String> playerName = ValueNotifier('Player');
 
+  /// Whether or not the sound effects (sfx) are on.
   ValueNotifier<bool> soundsOn = ValueNotifier(true);
 
+  /// Whether or not the music is on.
   ValueNotifier<bool> musicOn = ValueNotifier(true);
 
   /// Creates a new instance of [SettingsController] backed by [persistence].
-  SettingsController() {
-    loadStateFromPersistence();
+  ///
+  /// By default, settings are persisted using [LocalStorageSettingsPersistence]
+  /// (i.e. NSUserDefaults on iOS, SharedPreferences on Android or
+  /// local storage on the web).
+  SettingsController({SettingsPersistence? persistence})
+      : _persistence = persistence ?? LocalStorageSettingsPersistence() {
+    _loadStateFromPersistence();
+  }
+
+  void setPlayerName(String name) {
+    playerName.value = name;
+    _persistence.savePlayerName(playerName.value);
+  }
+
+  void toggleAudioOn() {
+    audioOn.value = !audioOn.value;
+    _persistence.saveAudioOn(audioOn.value);
+  }
+
+  void toggleMusicOn() {
+    musicOn.value = !musicOn.value;
+    _persistence.saveMusicOn(musicOn.value);
+  }
+
+  void toggleSoundsOn() {
+    soundsOn.value = !soundsOn.value;
+    _persistence.saveSoundsOn(soundsOn.value);
   }
 
   /// Asynchronously loads values from the injected persistence store.
-  Future<void> loadStateFromPersistence() async {
-    await Future.wait([
-      _persistence
-          .getMuted(defaultValue: false)
+  Future<void> _loadStateFromPersistence() async {
+    final loadedValues = await Future.wait([
+      _persistence.getAudioOn(defaultValue: true).then((value) {
+        if (kIsWeb) {
           // On the web, sound can only start after user interaction, so
           // we start muted there on every game start.
-          // On other platforms, we can use the persisted value.
-          .then((value) {
-        return muted.value = kIsWeb || value;
+          return audioOn.value = false;
+        }
+        // On other platforms, we can use the persisted value.
+        return audioOn.value = value;
       }),
       _persistence
           .getSoundsOn(defaultValue: true)
@@ -50,25 +85,7 @@ class SettingsController {
           .then((value) => musicOn.value = value),
       _persistence.getPlayerName().then((value) => playerName.value = value),
     ]);
-  }
 
-  void setPlayerName(String name) {
-    playerName.value = name;
-    _persistence.savePlayerName(playerName.value);
-  }
-
-  void toggleMusicOn() {
-    musicOn.value = !musicOn.value;
-    _persistence.saveMusicOn(musicOn.value);
-  }
-
-  void toggleMuted() {
-    muted.value = !muted.value;
-    _persistence.saveMuted(muted.value);
-  }
-
-  void toggleSoundsOn() {
-    soundsOn.value = !soundsOn.value;
-    _persistence.saveSoundsOn(soundsOn.value);
+    _log.fine(() => 'Loaded settings: $loadedValues');
   }
 }

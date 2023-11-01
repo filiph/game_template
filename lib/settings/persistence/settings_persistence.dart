@@ -7,17 +7,17 @@
 /// Implementations can range from simple in-memory storage through
 /// local preferences to cloud-based solutions.
 abstract class SettingsPersistence {
-  Future<bool> getMusicOn({required bool defaultValue});
+  Future<bool> getAudioOn({required bool defaultValue});
 
-  Future<bool> getMuted({required bool defaultValue});
+  Future<bool> getMusicOn({required bool defaultValue});
 
   Future<String> getPlayerName();
 
   Future<bool> getSoundsOn({required bool defaultValue});
 
-  Future<void> saveMusicOn(bool value);
+  Future<void> saveAudioOn(bool value);
 
-  Future<void> saveMuted(bool value);
+  Future<void> saveMusicOn(bool value);
 
   Future<void> savePlayerName(String value);
 
