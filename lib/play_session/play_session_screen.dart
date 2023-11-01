@@ -18,6 +18,11 @@ import '../style/my_button.dart';
 import '../style/palette.dart';
 import 'board_widget.dart';
 
+/// This widget defines the entirety of the screen that the player sees when
+/// they are playing a level.
+///
+/// It is a stateful widget because it manages some state of its own,
+/// such as whether the game is in a "celebration" state.
 class PlaySessionScreen extends StatefulWidget {
   const PlaySessionScreen({super.key});
 
@@ -47,38 +52,44 @@ class _PlaySessionScreenState extends State<PlaySessionScreen> {
         Provider.value(value: _boardState),
       ],
       child: IgnorePointer(
+        // Ignore all input during the celebration animation.
         ignoring: _duringCelebration,
         child: Scaffold(
           backgroundColor: palette.backgroundPlaySession,
+          // The stack is how you layer widgets on top of each other.
+          // Here, it is used to overlay the winning confetti animation on top
+          // of the game.
           body: Stack(
             children: [
-              Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: InkResponse(
-                        onTap: () => GoRouter.of(context).push('/settings'),
-                        child: Image.asset(
-                          'assets/images/settings.png',
-                          semanticLabel: 'Settings',
-                        ),
+              // This is the main layout of the play session screen,
+              // with a settings button at top, the actual play area
+              // in the middle, and a back button at the bottom.
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: InkResponse(
+                      onTap: () => GoRouter.of(context).push('/settings'),
+                      child: Image.asset(
+                        'assets/images/settings.png',
+                        semanticLabel: 'Settings',
                       ),
                     ),
-                    const Spacer(),
-                    BoardWidget(),
-                    Text("Drag cards to the two areas above."),
-                    const Spacer(),
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: MyButton(
-                        onPressed: () => GoRouter.of(context).go('/'),
-                        child: const Text('Back'),
-                      ),
+                  ),
+                  const Spacer(),
+                  // The actual UI of the game.
+                  BoardWidget(),
+                  Text("Drag cards to the two areas above."),
+                  const Spacer(),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: MyButton(
+                      onPressed: () => GoRouter.of(context).go('/'),
+                      child: const Text('Back'),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
               SizedBox.expand(
                 child: Visibility(
