@@ -14,7 +14,7 @@ class SettingsController {
   static final _log = Logger('SettingsController');
 
   /// The persistence store that is used to save settings.
-  final SettingsPersistence _persistence;
+  final SettingsPersistence _store;
 
   /// Whether or not the audio is on at all. This overrides both music
   /// and sounds (sfx).
@@ -35,40 +35,40 @@ class SettingsController {
   /// Whether or not the music is on.
   ValueNotifier<bool> musicOn = ValueNotifier(true);
 
-  /// Creates a new instance of [SettingsController] backed by [persistence].
+  /// Creates a new instance of [SettingsController] backed by [store].
   ///
   /// By default, settings are persisted using [LocalStorageSettingsPersistence]
   /// (i.e. NSUserDefaults on iOS, SharedPreferences on Android or
   /// local storage on the web).
-  SettingsController({SettingsPersistence? persistence})
-      : _persistence = persistence ?? LocalStorageSettingsPersistence() {
+  SettingsController({SettingsPersistence? store})
+      : _store = store ?? LocalStorageSettingsPersistence() {
     _loadStateFromPersistence();
   }
 
   void setPlayerName(String name) {
     playerName.value = name;
-    _persistence.savePlayerName(playerName.value);
+    _store.savePlayerName(playerName.value);
   }
 
   void toggleAudioOn() {
     audioOn.value = !audioOn.value;
-    _persistence.saveAudioOn(audioOn.value);
+    _store.saveAudioOn(audioOn.value);
   }
 
   void toggleMusicOn() {
     musicOn.value = !musicOn.value;
-    _persistence.saveMusicOn(musicOn.value);
+    _store.saveMusicOn(musicOn.value);
   }
 
   void toggleSoundsOn() {
     soundsOn.value = !soundsOn.value;
-    _persistence.saveSoundsOn(soundsOn.value);
+    _store.saveSoundsOn(soundsOn.value);
   }
 
   /// Asynchronously loads values from the injected persistence store.
   Future<void> _loadStateFromPersistence() async {
     final loadedValues = await Future.wait([
-      _persistence.getAudioOn(defaultValue: true).then((value) {
+      _store.getAudioOn(defaultValue: true).then((value) {
         if (kIsWeb) {
           // On the web, sound can only start after user interaction, so
           // we start muted there on every game start.
@@ -77,13 +77,13 @@ class SettingsController {
         // On other platforms, we can use the persisted value.
         return audioOn.value = value;
       }),
-      _persistence
+      _store
           .getSoundsOn(defaultValue: true)
           .then((value) => soundsOn.value = value),
-      _persistence
+      _store
           .getMusicOn(defaultValue: true)
           .then((value) => musicOn.value = value),
-      _persistence.getPlayerName().then((value) => playerName.value = value),
+      _store.getPlayerName().then((value) => playerName.value = value),
     ]);
 
     _log.fine(() => 'Loaded settings: $loadedValues');
