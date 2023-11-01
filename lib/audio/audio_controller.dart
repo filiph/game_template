@@ -51,7 +51,7 @@ class AudioController {
                 polyphony, (i) => AudioPlayer(playerId: 'sfxPlayer#$i'))
             .toList(growable: false),
         _playlist = Queue.of(List<Song>.of(songs)..shuffle()) {
-    _musicPlayer.onPlayerComplete.listen(_changeSong);
+    _musicPlayer.onPlayerComplete.listen(_handleSongFinished);
     unawaited(_preloadSfx());
   }
 
@@ -138,16 +138,8 @@ class AudioController {
     settingsController.soundsOn.addListener(_soundsOnHandler);
 
     if (!settingsController.muted.value && settingsController.musicOn.value) {
-      _startMusic();
+      _playCurrentSongInPlaylist();
     }
-  }
-
-  void _changeSong(void _) {
-    _log.info('Last song finished playing.');
-    // Put the song that just finished playing to the end of the playlist.
-    _playlist.addLast(_playlist.removeFirst());
-    // Play the next song.
-    _playFirstSongInPlaylist();
   }
 
   void _handleAppLifecycle() {
@@ -158,7 +150,7 @@ class AudioController {
         _stopAllSound();
       case AppLifecycleState.resumed:
         if (!_settings!.muted.value && _settings!.musicOn.value) {
-          _resumeMusic();
+          _startOrResumeMusic();
         }
       case AppLifecycleState.inactive:
         // No need to react to this state change.
@@ -166,33 +158,46 @@ class AudioController {
     }
   }
 
+  void _handleSongFinished(void _) {
+    _log.info('Last song finished playing.');
+    // Move the song that just finished playing to the end of the playlist.
+    _playlist.addLast(_playlist.removeFirst());
+    // Play the song at the beginning of the playlist.
+    _playCurrentSongInPlaylist();
+  }
+
   void _musicOnHandler() {
     if (_settings!.musicOn.value) {
       // Music got turned on.
       if (!_settings!.muted.value) {
-        _resumeMusic();
+        _startOrResumeMusic();
       }
     } else {
       // Music got turned off.
-      _stopMusic();
+      _musicPlayer.pause();
     }
   }
 
   void _mutedHandler() {
+    _log.fine('Muted changed to ${_settings!.muted.value}');
     if (_settings!.muted.value) {
       // All sound just got muted.
       _stopAllSound();
     } else {
       // All sound just got un-muted.
       if (_settings!.musicOn.value) {
-        _resumeMusic();
+        _startOrResumeMusic();
       }
     }
   }
 
-  Future<void> _playFirstSongInPlaylist() async {
+  Future<void> _playCurrentSongInPlaylist() async {
     _log.info(() => 'Playing ${_playlist.first} now.');
-    await _musicPlayer.play(AssetSource('music/${_playlist.first.filename}'));
+    try {
+      _musicPlayer.play(AssetSource('music/${_playlist.first.filename}'));
+    } catch (e) {
+      _log.severe('Could not play song ${_playlist.first}', e);
+    }
   }
 
   /// Preloads all sound effects.
@@ -207,36 +212,6 @@ class AudioController {
         .toList());
   }
 
-  Future<void> _resumeMusic() async {
-    _log.info('Resuming music');
-    switch (_musicPlayer.state) {
-      case PlayerState.paused:
-        _log.info('Calling _musicPlayer.resume()');
-        try {
-          await _musicPlayer.resume();
-        } catch (e) {
-          // Sometimes, resuming fails with an "Unexpected" error.
-          _log.severe(e);
-          await _playFirstSongInPlaylist();
-        }
-      case PlayerState.stopped:
-        _log.info("resumeMusic() called when music is stopped. "
-            "This probably means we haven't yet started the music. "
-            "For example, the game was started with sound off.");
-        await _playFirstSongInPlaylist();
-      case PlayerState.playing:
-        _log.warning('resumeMusic() called when music is playing. '
-            'Nothing to do.');
-      case PlayerState.completed:
-        _log.warning('resumeMusic() called when music is completed. '
-            "Music should never be 'completed' as it's either not playing "
-            "or looping forever.");
-        await _playFirstSongInPlaylist();
-      default:
-        _log.warning('Unhandled PlayerState: ${_musicPlayer.state}');
-    }
-  }
-
   void _soundsOnHandler() {
     for (final player in _sfxPlayers) {
       if (player.state == PlayerState.playing) {
@@ -245,24 +220,30 @@ class AudioController {
     }
   }
 
-  void _startMusic() {
-    _log.info('starting music');
-    _playFirstSongInPlaylist();
+  void _startOrResumeMusic() async {
+    if (_musicPlayer.source == null) {
+      _log.info('No music source set. '
+          'Start playing the current song in playlist.');
+      await _playCurrentSongInPlaylist();
+      return;
+    }
+
+    _log.info('Resuming paused music.');
+    try {
+      _musicPlayer.resume();
+    } catch (e) {
+      // Sometimes, resuming fails with an "Unexpected" error.
+      _log.severe("Error resuming music", e);
+      // Try starting the song from scratch.
+      _playCurrentSongInPlaylist();
+    }
   }
 
   void _stopAllSound() {
-    if (_musicPlayer.state == PlayerState.playing) {
-      _musicPlayer.pause();
-    }
+    _log.info('Stopping all sound');
+    _musicPlayer.pause();
     for (final player in _sfxPlayers) {
       player.stop();
-    }
-  }
-
-  void _stopMusic() {
-    _log.info('Stopping music');
-    if (_musicPlayer.state == PlayerState.playing) {
-      _musicPlayer.pause();
     }
   }
 }
