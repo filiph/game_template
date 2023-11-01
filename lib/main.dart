@@ -38,21 +38,27 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppLifecycleObserver(
       child: MultiProvider(
+        // This is where you add objects that you want to have available
+        // throughout your game.
+        //
+        // Every widget in the game can access these objects by calling
+        // `context.watch()` or `context.read()`.
+        // See `lib/main_menu/main_menu_screen.dart` for example usage.
         providers: [
+          Provider(create: (context) => SettingsController()),
           Provider(create: (context) => Palette()),
           ChangeNotifierProvider(create: (context) => PlayerProgress()),
-          Provider(create: (context) => SettingsController()),
           // Set up audio.
-          ProxyProvider2<SettingsController, AppLifecycleStateNotifier,
+          ProxyProvider2<AppLifecycleStateNotifier, SettingsController,
               AudioController>(
-            // Ensures that music starts immediately.
-            lazy: false,
             create: (context) => AudioController(),
-            update: (context, settings, lifecycleNotifier, audio) {
+            update: (context, lifecycleNotifier, settings, audio) {
               audio!.attachDependencies(lifecycleNotifier, settings);
               return audio;
             },
             dispose: (context, audio) => audio.dispose(),
+            // Ensures that music starts immediately.
+            lazy: false,
           ),
         ],
         child: Builder(builder: (context) {
