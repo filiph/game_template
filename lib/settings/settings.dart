@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:logging/logging.dart';
 
@@ -16,24 +18,18 @@ class SettingsController {
   /// The persistence store that is used to save settings.
   final SettingsPersistence _store;
 
-  /// Whether or not the audio is on at all. This overrides both music
-  /// and sounds (sfx).
-  ///
-  /// This is an important feature especially on mobile, where players
-  /// expect to be able to quickly mute all the audio. Having this as
-  /// a separate flag (as opposed to some kind of {off, sound, everything}
-  /// enum) means that the player will not lose their [soundsOn] and
-  /// [musicOn] preferences when they temporarily mute the game.
-  ValueNotifier<bool> audioOn = ValueNotifier(true);
+  final ValueNotifier<bool> _audioOn = ValueNotifier(true);
 
-  /// The player's name. Used for things like high score lists.
-  ValueNotifier<String> playerName = ValueNotifier('Player');
+  final ValueNotifier<String> _playerName = ValueNotifier('Player');
 
-  /// Whether or not the sound effects (sfx) are on.
-  ValueNotifier<bool> soundsOn = ValueNotifier(true);
+  final ValueNotifier<bool> _soundsOn = ValueNotifier(true);
 
-  /// Whether or not the music is on.
-  ValueNotifier<bool> musicOn = ValueNotifier(true);
+  final ValueNotifier<bool> _musicOn = ValueNotifier(true);
+
+  /// A future that completes when the initial loading of values
+  /// from the [store] has been either finished (`true`),
+  /// or has timed out (`false`).
+  late final Future<bool> hasLoadedSuccessfully;
 
   /// Creates a new instance of [SettingsController] backed by [store].
   ///
@@ -42,50 +38,95 @@ class SettingsController {
   /// local storage on the web).
   SettingsController({SettingsPersistence? store})
       : _store = store ?? LocalStorageSettingsPersistence() {
-    _loadStateFromPersistence();
+    // Start fetching the saved values from the persistence store.
+    hasLoadedSuccessfully = _loadStateFromPersistence();
   }
 
-  void setPlayerName(String name) {
-    playerName.value = name;
-    _store.savePlayerName(playerName.value);
+  /// Whether or not the audio is on at all. This overrides both music
+  /// and sounds (sfx).
+  ///
+  /// This is an important feature especially on mobile, where players
+  /// expect to be able to quickly mute all the audio. Having this as
+  /// a separate flag (as opposed to some kind of {off, sound, everything}
+  /// enum) means that the player will not lose their [soundsOn] and
+  /// [musicOn] preferences when they temporarily mute the game.
+  ValueListenable<bool> get audioOn => _audioOn;
+
+  /// Whether or not the music is on.
+  ValueListenable<bool> get musicOn => _musicOn;
+
+  /// The player's name. Used for things like high score lists.
+  ValueListenable<String> get playerName => _playerName;
+
+  /// Whether or not the sound effects (sfx) are on.
+  ValueListenable<bool> get soundsOn => _soundsOn;
+
+  void setPlayerName(String name) async {
+    _playerName.value = name;
+
+    await hasLoadedSuccessfully;
+    _store.savePlayerName(_playerName.value);
   }
 
-  void toggleAudioOn() {
-    audioOn.value = !audioOn.value;
-    _store.saveAudioOn(audioOn.value);
+  void toggleAudioOn() async {
+    _audioOn.value = !_audioOn.value;
+
+    await hasLoadedSuccessfully;
+    _store.saveAudioOn(_audioOn.value);
   }
 
-  void toggleMusicOn() {
-    musicOn.value = !musicOn.value;
-    _store.saveMusicOn(musicOn.value);
+  void toggleMusicOn() async {
+    _musicOn.value = !_musicOn.value;
+
+    await hasLoadedSuccessfully;
+    _store.saveMusicOn(_musicOn.value);
   }
 
-  void toggleSoundsOn() {
-    soundsOn.value = !soundsOn.value;
-    _store.saveSoundsOn(soundsOn.value);
+  void toggleSoundsOn() async {
+    _soundsOn.value = !_soundsOn.value;
+
+    await hasLoadedSuccessfully;
+    _store.saveSoundsOn(_soundsOn.value);
   }
 
   /// Asynchronously loads values from the injected persistence store.
-  Future<void> _loadStateFromPersistence() async {
-    final loadedValues = await Future.wait([
-      _store.getAudioOn(defaultValue: true).then((value) {
+  Future<bool> _loadStateFromPersistence() async {
+    const timeLimit = Duration(seconds: 5);
+
+    final parallelFetch = Future.wait([
+      _store.getAudioOn(defaultValue: true).timeout(timeLimit).then((value) {
         if (kIsWeb) {
           // On the web, sound can only start after user interaction, so
           // we start muted there on every game start.
-          return audioOn.value = false;
+          return _audioOn.value = false;
         }
         // On other platforms, we can use the persisted value.
-        return audioOn.value = value;
+        return _audioOn.value = value;
       }),
       _store
           .getSoundsOn(defaultValue: true)
-          .then((value) => soundsOn.value = value),
+          .timeout(timeLimit)
+          .then((value) => _soundsOn.value = value),
       _store
           .getMusicOn(defaultValue: true)
-          .then((value) => musicOn.value = value),
-      _store.getPlayerName().then((value) => playerName.value = value),
+          .timeout(timeLimit)
+          .then((value) => _musicOn.value = value),
+      _store
+          .getPlayerName()
+          .timeout(timeLimit)
+          .then((value) => _playerName.value = value),
     ]);
 
-    _log.fine(() => 'Loaded settings: $loadedValues');
+    try {
+      final loadedValues = await parallelFetch;
+      _log.fine(() => 'Loaded all settings: $loadedValues');
+      return true;
+    } on TimeoutException {
+      _log.warning('Failed to load settings within $timeLimit');
+      return false;
+    } catch (e) {
+      _log.warning('Failed to load settings', e);
+      return false;
+    }
   }
 }
