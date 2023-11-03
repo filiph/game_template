@@ -20,6 +20,8 @@ dependencies:
   logging: ^1.2.0
   provider: ^6.0.5
   shared_preferences: ^2.2.2
+  cloud_firestore: ^4.12.2
+  firebase_core: ^2.21.0
 
 dev_dependencies:
   flutter_lints: ^3.0.0
