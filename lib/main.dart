@@ -6,6 +6,7 @@ import 'dart:developer' as dev;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 
@@ -27,6 +28,15 @@ void main() async {
       name: record.loggerName,
     );
   });
+
+  WidgetsFlutterBinding.ensureInitialized();
+  // Put game into full screen mode on mobile devices.
+  await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+  // Lock the game to portrait mode on mobile devices.
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
 
   runApp(MyApp());
 }
