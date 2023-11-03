@@ -19,15 +19,10 @@ class ResponsiveScreen extends StatelessWidget {
   /// An area reserved for some static text close to the top of the screen.
   final Widget topMessageArea;
 
-  /// How much bigger should the [squarishMainArea] be compared to the other
-  /// elements.
-  final double mainAreaProminence;
-
   const ResponsiveScreen({
     required this.squarishMainArea,
     required this.rectangularMenuArea,
     this.topMessageArea = const SizedBox.shrink(),
-    this.mainAreaProminence = 0.8,
     super.key,
   });
 
@@ -52,7 +47,6 @@ class ResponsiveScreen extends StatelessWidget {
                 ),
               ),
               Expanded(
-                flex: (mainAreaProminence * 100).round(),
                 child: SafeArea(
                   top: false,
                   bottom: false,
